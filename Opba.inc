@@ -25,11 +25,14 @@ if you don't, use this to define maximum interiors you use:
 
 forward OPBA_SetPlayerPos(playerid, Float:x, Float:y, Float:z);
 forward OPBA_SetPlayerPosFindZ(playerid, Float:x, Float:y, Float:z);
+
 forward OPBA_SetVehiclePos(vehicleid, Float:x, Float:y, Float:z);
 forward OPBA_PutPlayerInVehicle(playerid, vehicleid, seatid);
 
 forward OPBA_AirbrakeTeleport(playerid);
+
 forward OPBA_ResetPImuunity(playerid);
+forward OPBA_SetPPos(playerid);
 
 #if !defined OPBA_CUSTOM_INTERIORS
 
@@ -102,12 +105,12 @@ new
 
 public OPBA_AirbrakeTeleport(playerid)
 {
-	if(GetPlayerState(playerid) == 2 && OPBA_GetPlayerSpeed(playerid) == 0)
+	if(GetPlayerState(playerid) == 2 && OPBA_GetPlayerSpeed(playerid) <= 60)
 	{
 		#if !defined OPBA_CUSTOM_INTERIORS
 		if(GetTickCount() < (OPBA_Player[playerid][RacPauseTicks]+2000) && !OPBA_Player[playerid][RacBreakImmunity] 
 		&& OPBA_PInteriors[playerid][GetPlayerInterior(playerid)] == 4 
-		&& !IsPlayerInRangeOfPoint(playerid, 10.0, 
+		&& !IsPlayerInRangeOfPoint(playerid, 50.0, 
 		OPBA_Player[playerid][RacX], OPBA_Player[playerid][RacY], OPBA_Player[playerid][RacZ]) && OPBA_Player[playerid][RacSImu])
 		{
 			#if defined OnPlayerBreakAir
@@ -156,11 +159,13 @@ public OPBA_AirbrakeTeleport(playerid)
 		}
 
 	GetPlayerPos(playerid, OPBA_Player[playerid][RacX], OPBA_Player[playerid][RacY], OPBA_Player[playerid][RacZ]);
-	
+
 	return 1;
 }
 
 public OPBA_ResetPImuunity(playerid) return OPBA_Player[playerid][RacBreakImmunity] = false;
+
+public OPBA_SetPPos(playerid) return OPBA_Player[playerid][RacSImu] = true;
 
 public OPBA_SetPlayerPos(playerid, Float:x, Float:y, Float:z)
 {
@@ -259,7 +264,7 @@ public OnPlayerDisconnect(playerid, reason)
 public OnPlayerSpawn(playerid)
 {
 	GetPlayerPos(playerid, OPBA_Player[playerid][RacX], OPBA_Player[playerid][RacY], OPBA_Player[playerid][RacZ]);
-	if(!OPBA_Player[playerid][RacSImu]) OPBA_Player[playerid][RacSImu] = true;
+	SetTimerEx("OPBA_SetPPos", 2500, false, "i", playerid);
 
 		#if defined OPBA_OnPlayerSpawn
 	return OPBA_OnPlayerSpawn(playerid);
