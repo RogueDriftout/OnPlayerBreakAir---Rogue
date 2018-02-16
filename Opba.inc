@@ -200,9 +200,9 @@ public OPBA_SetVehiclePos(vehicleid, Float:x, Float:y, Float:z)
     	{
     		if(!OPBA_Player[i][RacBreakImmunity]) SetTimerEx("OPBA_ResetPImuunity", 1000, false, "i", i),
     		OPBA_Player[i][RacBreakImmunity] = true;
-			OPBA_Player[i][RacX] = x;
-			OPBA_Player[i][RacY] = y;
-			OPBA_Player[i][RacZ] = z;
+		OPBA_Player[i][RacX] = x;
+		OPBA_Player[i][RacY] = y;
+		OPBA_Player[i][RacZ] = z;
     		SetVehiclePos(vehicleid, Float:x, Float:y, Float:z);
     		}
     	else SetVehiclePos(vehicleid, Float:x, Float:y, Float:z);
