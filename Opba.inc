@@ -249,9 +249,9 @@ public OPBA_SetVehiclePos(vehicleid, Float:x, Float:y, Float:z)
     {
     	if(!OPBA_Player[OPBA_VOwner[vehicleid]][RacBreakImmunity]) SetTimerEx("OPBA_ResetPImuunity", 1000, false, "i", OPBA_VOwner[vehicleid]),
     	OPBA_Player[OPBA_VOwner[vehicleid]][RacBreakImmunity] = true;
-		OPBA_Player[OPBA_VOwner[vehicleid]][RacX] = x;
-		OPBA_Player[OPBA_VOwner[vehicleid]][RacY] = y;
-		OPBA_Player[OPBA_VOwner[vehicleid]][RacZ] = z;
+	OPBA_Player[OPBA_VOwner[vehicleid]][RacX] = x;
+	OPBA_Player[OPBA_VOwner[vehicleid]][RacY] = y;
+	OPBA_Player[OPBA_VOwner[vehicleid]][RacZ] = z;
     	SetVehiclePos(vehicleid, Float:x, Float:y, Float:z);
     	}
     else SetVehiclePos(vehicleid, Float:x, Float:y, Float:z);
