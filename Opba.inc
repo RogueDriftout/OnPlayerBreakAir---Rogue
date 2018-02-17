@@ -130,59 +130,80 @@ new
 
 public OPBA_AirbrakeTeleport(playerid)
 {
-	if(GetPlayerState(playerid) == 2 && OPBA_GetPlayerSpeed(playerid) <= 60)
+	if(OPBA_GetPlayerSpeed(playerid) <= 60 && GetTickCount() < (OPBA_Player[playerid][RacPauseTicks]+2000) 
+	&& OPBA_PInteriors[playerid][GetPlayerInterior(playerid)] == 4 && !OPBA_Player[playerid][RacBreakImmunity] && OPBA_Player[playerid][RacSImu])
 	{
-		#if !defined OPBA_CUSTOM_INTERIORS
-		if(GetTickCount() < (OPBA_Player[playerid][RacPauseTicks]+2000) && !OPBA_Player[playerid][RacBreakImmunity] 
-		&& OPBA_PInteriors[playerid][GetPlayerInterior(playerid)] == 4 
-		&& !IsPlayerInRangeOfPoint(playerid, 50.0, 
-		OPBA_Player[playerid][RacX], OPBA_Player[playerid][RacY], OPBA_Player[playerid][RacZ]) && OPBA_Player[playerid][RacSImu])
+		switch(GetPlayerState(playerid))
 		{
-			#if defined OnPlayerBreakAir
-			OnPlayerBreakAir(playerid, 2);
-			#endif
-			}
+			case 1:
+			{
+				if(GetPlayerSurfingVehicleID(playerid) == INVALID_VEHICLE_ID && GetPlayerSpecialAction(playerid) != 2 && GetPlayerAnimationIndex(playerid) != 1130)
+				{
+					#if !defined OPBA_CUSTOM_INTERIORS
+					if(!IsPlayerInRangeOfPoint(playerid, 15.0, OPBA_Player[playerid][RacX], OPBA_Player[playerid][RacY], OPBA_Player[playerid][RacZ]))
+					{
+						#if defined OnPlayerBreakAir
+						OnPlayerBreakAir(playerid, 1);
+						#endif
+						}
 
-		#else
+					#else
 
-		if(GetTickCount() < (OPBA_Player[playerid][RacPauseTicks]+2000) && !OPBA_Player[playerid][RacBreakImmunity] 
-		&& !IsPlayerInRangeOfPoint(playerid, 20.0, OPBA_Player[playerid][RacX], OPBA_Player[playerid][RacY], 
-		OPBA_Player[playerid][RacZ]) && OPBA_Player[playerid][RacSImu])
-		{
-			#if defined OnPlayerBreakAir
-			OnPlayerBreakAir(playerid, 2);
-			#endif
+					if(!IsPlayerInRangeOfPoint(playerid, 15.0, OPBA_Player[playerid][RacX], OPBA_Player[playerid][RacY], OPBA_Player[playerid][RacZ]))
+					{
+						#if defined OnPlayerBreakAir
+						OnPlayerBreakAir(playerid, 1);
+						#endif
+						}
+					#endif
+					}
+				}
+			case 2:
+			{
+				#if !defined OPBA_CUSTOM_INTERIORS
+				if(!IsPlayerInRangeOfPoint(playerid, 50.0, OPBA_Player[playerid][RacX], OPBA_Player[playerid][RacY], OPBA_Player[playerid][RacZ]))
+				{
+					#if defined OnPlayerBreakAir
+					OnPlayerBreakAir(playerid, 2);
+					#endif
+					}
+
+				#else
+
+				if(!IsPlayerInRangeOfPoint(playerid, 50.0, OPBA_Player[playerid][RacX], OPBA_Player[playerid][RacY], OPBA_Player[playerid][RacZ]))
+				{
+					#if defined OnPlayerBreakAir
+					OnPlayerBreakAir(playerid, 2);
+					#endif
+					}
+				#endif
+				}
+			case 3:
+			{
+	 			if(OPBA_VOwner[GetPlayerVehicleID(playerid)] == INVALID_PLAYER_ID)
+				{
+					#if !defined OPBA_CUSTOM_INTERIORS
+					if(!IsPlayerInRangeOfPoint(playerid, 50.0, OPBA_Player[playerid][RacX], OPBA_Player[playerid][RacY], OPBA_Player[playerid][RacZ]))
+					{
+						#if defined OnPlayerBreakAir
+						OnPlayerBreakAir(playerid, 2);
+						#endif
+						}
+
+					#else
+
+				if(!IsPlayerInRangeOfPoint(playerid, 50.0, OPBA_Player[playerid][RacX], OPBA_Player[playerid][RacY], OPBA_Player[playerid][RacZ]))
+				{
+					#if defined OnPlayerBreakAir
+					OnPlayerBreakAir(playerid, 2);
+					#endif
+					}
+				#endif
+				}
 			}
-		#endif
 		}
-
-	else if(GetPlayerState(playerid) == 1 && GetPlayerSurfingVehicleID(playerid) == INVALID_VEHICLE_ID 
-	&& GetPlayerSpecialAction(playerid) != 2 && GetPlayerAnimationIndex(playerid) != 1130 && OPBA_GetPlayerSpeed(playerid) <= 60)
-	{
-		#if !defined OPBA_CUSTOM_INTERIORS
-		if(GetTickCount() < (OPBA_Player[playerid][RacPauseTicks]+2000) && !OPBA_Player[playerid][RacBreakImmunity] 
-		&& OPBA_PInteriors[playerid][GetPlayerInterior(playerid)] == 4 
-		&& !IsPlayerInRangeOfPoint(playerid, 15.0, 
-		OPBA_Player[playerid][RacX], OPBA_Player[playerid][RacY], OPBA_Player[playerid][RacZ]) && OPBA_Player[playerid][RacSImu])
-		{
-			#if defined OnPlayerBreakAir
-			OnPlayerBreakAir(playerid, 1);
-			#endif
-			}
-
-		#else
-
-		if(GetTickCount() < (OPBA_Player[playerid][RacPauseTicks]+2000) && !OPBA_Player[playerid][RacBreakImmunity] 
-		&& !IsPlayerInRangeOfPoint(playerid, 20.0, OPBA_Player[playerid][RacX], OPBA_Player[playerid][RacY], 
-		OPBA_Player[playerid][RacZ]) && OPBA_Player[playerid][RacSImu])
-		{
-			#if defined OnPlayerBreakAir
-			OnPlayerBreakAir(playerid, 1);
-			#endif
-			}
-		#endif
-		}
-
+	}
+	
 	GetPlayerPos(playerid, OPBA_Player[playerid][RacX], OPBA_Player[playerid][RacY], OPBA_Player[playerid][RacZ]);
 
 	return 1;
@@ -249,9 +270,9 @@ public OPBA_SetVehiclePos(vehicleid, Float:x, Float:y, Float:z)
     {
     	if(!OPBA_Player[OPBA_VOwner[vehicleid]][RacBreakImmunity]) SetTimerEx("OPBA_ResetPImuunity", 1000, false, "i", OPBA_VOwner[vehicleid]),
     	OPBA_Player[OPBA_VOwner[vehicleid]][RacBreakImmunity] = true;
-	OPBA_Player[OPBA_VOwner[vehicleid]][RacX] = x;
-	OPBA_Player[OPBA_VOwner[vehicleid]][RacY] = y;
-	OPBA_Player[OPBA_VOwner[vehicleid]][RacZ] = z;
+		OPBA_Player[OPBA_VOwner[vehicleid]][RacX] = x;
+		OPBA_Player[OPBA_VOwner[vehicleid]][RacY] = y;
+		OPBA_Player[OPBA_VOwner[vehicleid]][RacZ] = z;
     	SetVehiclePos(vehicleid, Float:x, Float:y, Float:z);
     	}
     else SetVehiclePos(vehicleid, Float:x, Float:y, Float:z);
@@ -339,7 +360,6 @@ public OnPlayerDisconnect(playerid, reason)
     KillTimer(OPBA_Player[playerid][RacInteriorsTimer]);
 
     #endif
-
 			#if defined OPBA_OnPlayerDisconnect
 	return OPBA_OnPlayerDisconnect(playerid, reason);
 		#else
