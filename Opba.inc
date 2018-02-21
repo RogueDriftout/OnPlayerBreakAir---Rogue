@@ -1,8 +1,11 @@
 /* 
 Made by RogueDrifter 2018/2/13 
 -=-=-=-=-=-=-=-=-=-=-=-=-=-
+
 Callbacks:
+-=-=-=-=-
 	OnPlayerBreakAir(playerid, breaktype);
+
 -=-=-=-=Usable Defenitions:-=-=-=-=
 USE THIS BEFORE THE INCLUDE IF YOU CANCEL THE ORIGINAL SAMP INTERIORS TO AVOID EXTRA CHECKS!
 
@@ -209,32 +212,19 @@ public OPBA_AirbrakeTeleport(playerid)
 	return 1;
 }
 
-public OPBA_SafeReset()
-{
-    new AllVehicles[MAX_VEHICLES];
-    for(new i, j = GetPlayerPoolSize(); i <= j; i++)
-    {
-        if(!IsPlayerConnected(i)) continue;
-        new gpVehicleID[MAX_PLAYERS];
-        gpVehicleID[i] = GetPlayerVehicleID(i);
-        if(GetPlayerState(i)== PLAYER_STATE_DRIVER && AllVehicles[gpVehicleID[i]] != i )
-        {
-            AllVehicles[gpVehicleID[i]]= i;
-            OPBA_VOwner[gpVehicleID[i]]= i;
-            }
-        }
-    for(new x; x<MAX_VEHICLES; x++)
-    {
-        if(!IsValidVehicle(x)) continue;
-        if(AllVehicles[x] != -1)
-        {
-            if(GetPlayerState(AllVehicles[x]) != PLAYER_STATE_DRIVER) AllVehicles[x] = -1;
-            }
-        if(AllVehicles[x] == -1) OPBA_VOwner[x]= INVALID_PLAYER_ID;
-        }
-
-    return 1;
-}
+public OPBA_SafeReset() 
+{ 
+    static const tmp2[sizeof(OPBA_VOwner)] = {INVALID_PLAYER_ID,...}; 
+    memcpy(OPBA_VOwner, tmp2, 0, sizeof(OPBA_VOwner) * 4); 
+    for(new i, j = GetPlayerPoolSize(); i <= j; i++) 
+    { 
+        if(!IsPlayerConnected(i)) continue; 
+        if(GetPlayerState(i)== PLAYER_STATE_DRIVER) 
+            OPBA_VOwner[GetPlayerVehicleID(i)]=  i ; 
+    } 
+    
+    return 1; 
+} 
 
 public OPBA_ResetPImuunity(playerid) return OPBA_Player[playerid][RacBreakImmunity] = false;
 
