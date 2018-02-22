@@ -7,6 +7,7 @@ Callbacks:
 	OnPlayerBreakAir(playerid, breaktype);
 
 -=-=-=-=Usable Defenitions:-=-=-=-=
+
 USE THIS BEFORE THE INCLUDE IF YOU CANCEL THE ORIGINAL SAMP INTERIORS TO AVOID EXTRA CHECKS!
 
 #define OPBA_CUSTOM_INTERIORS 
@@ -48,7 +49,6 @@ forward OPBA_SetPPos(playerid);
 	#define OPBA_MAX_INTERIORS 255
 #endif
 
-	forward OPBA_InteriorTicks(playerid, interiorid);
 #endif
 
 #if defined OPBA_OnPlayerDisconnect
@@ -101,11 +101,7 @@ enum E_OPBA_PLAYER_DATA
 	Float:RacX,
 	Float:RacY,
 	Float:RacZ,
-
-	#if !defined OPBA_CUSTOM_INTERIORS
-	RacInteriorsTimer,
-	#endif
-
+	
 	RacDetectTimer
 };
 
@@ -114,7 +110,7 @@ enum E_OPBA_PLAYER_DATA
 new 
 	OPBA_Player[MAX_PLAYERS][E_OPBA_PLAYER_DATA],
 	
-	OPBA_PInteriors[MAX_PLAYERS][OPBA_MAX_INTERIORS],
+	bool:OPBA_PInteriors[MAX_PLAYERS][OPBA_MAX_INTERIORS],
 
 	OPBA_VOwner[MAX_VEHICLES],
 
@@ -133,6 +129,10 @@ new
 
 public OPBA_AirbrakeTeleport(playerid)
 {
+	#if !defined OPBA_CUSTOM_INTERIORS
+	new OpbaTempInt = GetPlayerInterior(playerid);
+	#endif
+
 	if(OPBA_GetPlayerSpeed(playerid) <= 60 && GetTickCount() < (OPBA_Player[playerid][RacPauseTicks]+2000) 
 	&& !OPBA_Player[playerid][RacBreakImmunity] && OPBA_Player[playerid][RacSImu])
 	{
@@ -143,7 +143,7 @@ public OPBA_AirbrakeTeleport(playerid)
 				if(GetPlayerSurfingVehicleID(playerid) == INVALID_VEHICLE_ID && GetPlayerSpecialAction(playerid) != 2 && GetPlayerAnimationIndex(playerid) != 1130)
 				{
 					#if !defined OPBA_CUSTOM_INTERIORS
-					if(!IsPlayerInRangeOfPoint(playerid, 15.0, OPBA_Player[playerid][RacX], OPBA_Player[playerid][RacY], OPBA_Player[playerid][RacZ]) && OPBA_PInteriors[playerid][GetPlayerInterior(playerid)] == 4)
+					if(!IsPlayerInRangeOfPoint(playerid, 15.0, OPBA_Player[playerid][RacX], OPBA_Player[playerid][RacY], OPBA_Player[playerid][RacZ]) && OPBA_PInteriors[playerid][OpbaTempInt])
 					{
 						#if defined OnPlayerBreakAir
 						OnPlayerBreakAir(playerid, 1);
@@ -164,7 +164,7 @@ public OPBA_AirbrakeTeleport(playerid)
 			case 2:
 			{
 				#if !defined OPBA_CUSTOM_INTERIORS
-				if(!IsPlayerInRangeOfPoint(playerid, 50.0, OPBA_Player[playerid][RacX], OPBA_Player[playerid][RacY], OPBA_Player[playerid][RacZ]) && OPBA_PInteriors[playerid][GetPlayerInterior(playerid)] == 4)
+				if(!IsPlayerInRangeOfPoint(playerid, 50.0, OPBA_Player[playerid][RacX], OPBA_Player[playerid][RacY], OPBA_Player[playerid][RacZ]) && OPBA_PInteriors[playerid][OpbaTempInt])
 				{
 					#if defined OnPlayerBreakAir
 					OnPlayerBreakAir(playerid, 2);
@@ -186,7 +186,7 @@ public OPBA_AirbrakeTeleport(playerid)
 	 			if(OPBA_VOwner[GetPlayerVehicleID(playerid)] == INVALID_PLAYER_ID)
 				{
 					#if !defined OPBA_CUSTOM_INTERIORS
-					if(!IsPlayerInRangeOfPoint(playerid, 50.0, OPBA_Player[playerid][RacX], OPBA_Player[playerid][RacY], OPBA_Player[playerid][RacZ]) && OPBA_PInteriors[playerid][GetPlayerInterior(playerid)] == 4)
+					if(!IsPlayerInRangeOfPoint(playerid, 50.0, OPBA_Player[playerid][RacX], OPBA_Player[playerid][RacY], OPBA_Player[playerid][RacZ]) && OPBA_PInteriors[playerid][OpbaTempInt])
 					{
 						#if defined OnPlayerBreakAir
 						OnPlayerBreakAir(playerid, 2);
@@ -344,10 +344,8 @@ public OnPlayerDisconnect(playerid, reason)
 
 	for(new i; i < OPBA_MAX_INTERIORS; i++)
     {
-    	OPBA_PInteriors[playerid][i] = 0;
+    	OPBA_PInteriors[playerid][i] = false;
     	}
-
-    KillTimer(OPBA_Player[playerid][RacInteriorsTimer]);
 
     #endif
 			#if defined OPBA_OnPlayerDisconnect
@@ -364,7 +362,7 @@ public OnPlayerSpawn(playerid)
 
 	#if !defined OPBA_CUSTOM_INTERIORS
 
-	OPBA_PInteriors[playerid][GetPlayerInterior(playerid)] = 4;
+	OPBA_PInteriors[playerid][GetPlayerInterior(playerid)] = true;
 	#endif
 
 		#if defined OPBA_OnPlayerSpawn
@@ -376,18 +374,10 @@ public OnPlayerSpawn(playerid)
 
 #if !defined OPBA_CUSTOM_INTERIORS
 
-public OPBA_InteriorTicks(playerid, interiorid)
-{
-	if(OPBA_PInteriors[playerid][interiorid] <= 3) OPBA_PInteriors[playerid][interiorid]++;
-	else KillTimer(OPBA_Player[playerid][RacInteriorsTimer]);
-
-	return 1;
-}
-
 public OnPlayerInteriorChange(playerid, newinteriorid, oldinteriorid)
 {
-    OPBA_PInteriors[playerid][oldinteriorid] = 0;
-    OPBA_Player[playerid][RacInteriorsTimer] = SetTimerEx("OPBA_InteriorTicks", 1000, true, "ii", playerid, newinteriorid);
+    OPBA_PInteriors[playerid][oldinteriorid] = false;
+    OPBA_PInteriors[playerid][newinteriorid] = true;
 
 		#if defined OPBA_OnPlayerInteriorChange
 	return OPBA_OnPlayerInteriorChange(playerid, newinteriorid, oldinteriorid);
