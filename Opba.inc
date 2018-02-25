@@ -8,7 +8,7 @@ Callbacks:
 
 -=-=-=-=Usable Defenitions:-=-=-=-=
 
-USE THIS BEFORE THE INCLUDE IF YOU CANCEL THE ORIGINAL SAMP INTERIORS TO AVOID EXTRA CHECKS!
+USE THIS BEFORE THE INCLUDE IF YOU CANCEL THE ORIGINAL SAMP INTERIORS (INCLUDING MOD GARAGES!) TO AVOID EXTRA CHECKS!
 
 #define OPBA_CUSTOM_INTERIORS 
 
@@ -27,14 +27,17 @@ if you don't, use this to define maximum interiors you use:
 
 #if !defined FILTERSCRIPT
 
+#if !defined OPBA_RESET_TIME
+	#define OPBA_RESET_TIME 3500
+#endif
+
 forward OPBA_SetPlayerPos(playerid, Float:x, Float:y, Float:z);
 forward OPBA_SetPlayerPosFindZ(playerid, Float:x, Float:y, Float:z);
-
+forward OPBA_TogglePlayerSpectating(playerid, toggle);
 forward OPBA_SetVehiclePos(vehicleid, Float:x, Float:y, Float:z);
 forward OPBA_PutPlayerInVehicle(playerid, vehicleid, seatid);
 
 forward OPBA_AirbrakeTeleport(playerid);
-
 forward OPBA_SafeReset();
 forward OPBA_ResetPImuunity(playerid);
 forward OPBA_SetPPos(playerid);
@@ -81,6 +84,10 @@ forward OPBA_SetPPos(playerid);
 
 #if defined OPBA_OnPlayerStateChange
 	forward OPBA_OnPlayerStateChange(playerid, newstate, oldstate);
+#endif
+
+#if defined OPBA_OnPlayerEnterVehicle
+	forward OPBA_OnPlayerEnterVehicle(playerid, vehicleid, ispassenger);
 #endif
 
 #if defined OPBA_OnGameModeInit
@@ -133,7 +140,7 @@ public OPBA_AirbrakeTeleport(playerid)
 	new OpbaTempInt = GetPlayerInterior(playerid);
 	#endif
 
-	if(OPBA_GetPlayerSpeed(playerid) <= 60 && GetTickCount() < (OPBA_Player[playerid][RacPauseTicks]+2000) 
+	if(OPBA_GetPlayerSpeed(playerid) <= 60 && GetTickCount() < (OPBA_Player[playerid][RacPauseTicks]+1500) 
 	&& !OPBA_Player[playerid][RacBreakImmunity] && OPBA_Player[playerid][RacSImu])
 	{
 		switch(GetPlayerState(playerid))
@@ -148,7 +155,7 @@ public OPBA_AirbrakeTeleport(playerid)
 						#if defined OnPlayerBreakAir
 						OnPlayerBreakAir(playerid, 1);
 						#endif
-						}
+					}
 
 					#else
 
@@ -157,10 +164,10 @@ public OPBA_AirbrakeTeleport(playerid)
 						#if defined OnPlayerBreakAir
 						OnPlayerBreakAir(playerid, 1);
 						#endif
-						}
-					#endif
 					}
+					#endif
 				}
+			}
 			case 2:
 			{
 				#if !defined OPBA_CUSTOM_INTERIORS
@@ -169,7 +176,7 @@ public OPBA_AirbrakeTeleport(playerid)
 					#if defined OnPlayerBreakAir
 					OnPlayerBreakAir(playerid, 2);
 					#endif
-					}
+				}
 
 				#else
 
@@ -178,9 +185,9 @@ public OPBA_AirbrakeTeleport(playerid)
 					#if defined OnPlayerBreakAir
 					OnPlayerBreakAir(playerid, 2);
 					#endif
-					}
-				#endif
 				}
+				#endif
+			}
 			case 3:
 			{
 	 			if(OPBA_VOwner[GetPlayerVehicleID(playerid)] == INVALID_PLAYER_ID)
@@ -191,7 +198,7 @@ public OPBA_AirbrakeTeleport(playerid)
 						#if defined OnPlayerBreakAir
 						OnPlayerBreakAir(playerid, 2);
 						#endif
-						}
+					}
 
 					#else
 
@@ -200,7 +207,7 @@ public OPBA_AirbrakeTeleport(playerid)
 					#if defined OnPlayerBreakAir
 					OnPlayerBreakAir(playerid, 2);
 					#endif
-					}
+				}
 				#endif
 				}
 			}
@@ -221,18 +228,17 @@ public OPBA_SafeReset()
         if(!IsPlayerConnected(i)) continue; 
         if(GetPlayerState(i)== PLAYER_STATE_DRIVER) 
         OPBA_VOwner[GetPlayerVehicleID(i)]=  i ; 
-        } 
+    } 
 
     return 1; 
 } 
 
 public OPBA_ResetPImuunity(playerid) return OPBA_Player[playerid][RacBreakImmunity] = false;
-
 public OPBA_SetPPos(playerid) return OPBA_Player[playerid][RacSImu] = true;
 
 public OPBA_SetPlayerPos(playerid, Float:x, Float:y, Float:z)
 {
-	if(!OPBA_Player[playerid][RacBreakImmunity]) SetTimerEx("OPBA_ResetPImuunity", 1000, false, "i", playerid),
+	if(!OPBA_Player[playerid][RacBreakImmunity]) SetTimerEx("OPBA_ResetPImuunity", OPBA_RESET_TIME, false, "i", playerid),
 	OPBA_Player[playerid][RacBreakImmunity] = true;
 	OPBA_Player[playerid][RacX] = x;
 	OPBA_Player[playerid][RacY] = y;
@@ -242,9 +248,18 @@ public OPBA_SetPlayerPos(playerid, Float:x, Float:y, Float:z)
 	return 1;
 }
 
+public OPBA_TogglePlayerSpectating(playerid, toggle)
+{
+	if(!OPBA_Player[playerid][RacBreakImmunity]) SetTimerEx("OPBA_ResetPImuunity", OPBA_RESET_TIME, false, "i", playerid),
+	OPBA_Player[playerid][RacBreakImmunity] = true;
+	TogglePlayerSpectating(playerid, toggle);
+
+	return 1;
+}
+
 public OPBA_SetPlayerPosFindZ(playerid, Float:x, Float:y, Float:z)
 {
-	if(!OPBA_Player[playerid][RacBreakImmunity]) SetTimerEx("OPBA_ResetPImuunity", 1000, false, "i", playerid),
+	if(!OPBA_Player[playerid][RacBreakImmunity]) SetTimerEx("OPBA_ResetPImuunity", OPBA_RESET_TIME, false, "i", playerid),
 	OPBA_Player[playerid][RacBreakImmunity] = true;
 	OPBA_Player[playerid][RacX] = x;
 	OPBA_Player[playerid][RacY] = y;
@@ -256,15 +271,15 @@ public OPBA_SetPlayerPosFindZ(playerid, Float:x, Float:y, Float:z)
 
 public OPBA_SetVehiclePos(vehicleid, Float:x, Float:y, Float:z)
 {
-    if(GetPlayerState(OPBA_VOwner[vehicleid]) == 2 && GetPlayerVehicleID(OPBA_VOwner[vehicleid]) == vehicleid)
+    if(OPBA_VOwner[vehicleid] != INVALID_PLAYER_ID)
     {
-    	if(!OPBA_Player[OPBA_VOwner[vehicleid]][RacBreakImmunity]) SetTimerEx("OPBA_ResetPImuunity", 1000, false, "i", OPBA_VOwner[vehicleid]),
+    	if(!OPBA_Player[OPBA_VOwner[vehicleid]][RacBreakImmunity]) SetTimerEx("OPBA_ResetPImuunity", OPBA_RESET_TIME, false, "i", OPBA_VOwner[vehicleid]),
     	OPBA_Player[OPBA_VOwner[vehicleid]][RacBreakImmunity] = true;
 		OPBA_Player[OPBA_VOwner[vehicleid]][RacX] = x;
 		OPBA_Player[OPBA_VOwner[vehicleid]][RacY] = y;
 		OPBA_Player[OPBA_VOwner[vehicleid]][RacZ] = z;
     	SetVehiclePos(vehicleid, Float:x, Float:y, Float:z);
-    	}
+    }
     else SetVehiclePos(vehicleid, Float:x, Float:y, Float:z);
 
 	return 1;
@@ -272,7 +287,7 @@ public OPBA_SetVehiclePos(vehicleid, Float:x, Float:y, Float:z)
 
 public OPBA_PutPlayerInVehicle(playerid, vehicleid, seatid)
 {
-	if(!OPBA_Player[playerid][RacBreakImmunity]) SetTimerEx("OPBA_ResetPImuunity", 1000, false, "i", playerid),
+	if(!OPBA_Player[playerid][RacBreakImmunity]) SetTimerEx("OPBA_ResetPImuunity", OPBA_RESET_TIME, false, "i", playerid),
 	OPBA_Player[playerid][RacBreakImmunity] = true;
 	new Float:x , Float:y, Float:z;
 	GetVehiclePos(vehicleid, x, y, z);
@@ -284,6 +299,20 @@ public OPBA_PutPlayerInVehicle(playerid, vehicleid, seatid)
 	return 1;
 }
 
+public OnPlayerEnterVehicle(playerid, vehicleid, ispassenger)
+{
+	if(OPBA_VOwner[vehicleid] != INVALID_PLAYER_ID && !ispassenger && !OPBA_Player[playerid][RacBreakImmunity])
+	{
+		if(!OPBA_Player[playerid][RacBreakImmunity]) SetTimerEx("OPBA_ResetPImuunity", OPBA_RESET_TIME, false, "i", playerid),
+		OPBA_Player[playerid][RacBreakImmunity] = true;
+	}
+
+		#if defined OPBA_OnPlayerEnterVehicle
+	return OPBA_OnPlayerEnterVehicle(playerid, vehicleid, ispassenger);
+		#else
+	return 1;
+		#endif
+}
 public OnGameModeInit()
 {
     OP_SafeTimer = SetTimer("OPBA_SafeReset", 5000, true);
@@ -321,8 +350,17 @@ public OnPlayerStateChange(playerid, newstate, oldstate)
 {
 	new OPBA_TempCar = GetPlayerVehicleID(playerid);
 
-	if(newstate == 2) OPBA_VOwner[OPBA_TempCar] = playerid;
-	else if(newstate == 1 && oldstate == 2) OPBA_VOwner[OPBA_TempCar] = INVALID_PLAYER_ID;
+	switch(newstate)
+	{
+		case 1:
+		{
+			if(oldstate ==2) OPBA_VOwner[OPBA_TempCar] = INVALID_PLAYER_ID;
+		}
+		case 2:
+		{
+			OPBA_VOwner[OPBA_TempCar] = playerid;
+		}
+	}
 
 			#if defined OPBA_OnPlayerStateChange
 	return OPBA_OnPlayerStateChange(playerid, newstate, oldstate);
@@ -345,7 +383,7 @@ public OnPlayerDisconnect(playerid, reason)
 	for(new i; i < OPBA_MAX_INTERIORS; i++)
     {
     	OPBA_PInteriors[playerid][i] = false;
-    	}
+    }
 
     #endif
 			#if defined OPBA_OnPlayerDisconnect
@@ -470,6 +508,14 @@ stock OPBA_GetPlayerSpeed(playerid)
 
 #define OnPlayerUpdate OPBA_OnPlayerUpdate
 
+#if defined _ALS_OnPlayerEnterVehicle
+  #undef OnPlayerEnterVehicle
+#else
+    #define _ALS_OnPlayerEnterVehicle
+#endif
+
+#define OnPlayerEnterVehicle OPBA_OnPlayerEnterVehicle
+
 #if defined _ALS_OnGameModeInit
   #undef OnGameModeInit
 #else
@@ -510,6 +556,14 @@ stock OPBA_GetPlayerSpeed(playerid)
 
 #define SetVehiclePos OPBA_SetVehiclePos
 
+#if defined _ALS_TogglePlayerSpectating
+  #undef TogglePlayerSpectating
+#else
+    #define _ALS_TogglePlayerSpectating
+#endif
+
+#define TogglePlayerSpectating OPBA_TogglePlayerSpectating
+
 #if defined _ALS_SetPlayerPosFindZ
   #undef SetPlayerPosFindZ
 #else
@@ -539,6 +593,9 @@ stock OPBA_FSetPlayerPosFindZ(playerid, Float:x, Float:y, Float:z)
 
 stock OPBA_FPutPlayerInVehicle(playerid, vehicleid, seatid)
 	return CallRemoteFunction("OPBA_PutPlayerInVehicle", "iii", playerid, vehicleid, seatid);
+
+stock OPBA_FTogglePlayerSpectating(playerid, toggle)
+	return CallRemoteFunction("OPBA_TogglePlayerSpectating", "ii", playerid, toggle);
 
 #if defined _ALS_SetPlayerPos
   #undef SetPlayerPos
@@ -571,5 +628,13 @@ stock OPBA_FPutPlayerInVehicle(playerid, vehicleid, seatid)
 #endif
 
 #define PutPlayerInVehicle OPBA_FPutPlayerInVehicle
+
+#if defined _ALS_TogglePlayerSpectating
+  #undef TogglePlayerSpectating
+#else
+    #define _ALS_TogglePlayerSpectating
+#endif
+
+#define TogglePlayerSpectating OPBA_FTogglePlayerSpectating
 
 #endif
