@@ -150,7 +150,7 @@ public OPBA_AirbrakeTeleport(playerid)
 				if(GetPlayerSurfingVehicleID(playerid) == INVALID_VEHICLE_ID && GetPlayerSpecialAction(playerid) != 2 && GetPlayerAnimationIndex(playerid) != 1130)
 				{
 					#if !defined OPBA_CUSTOM_INTERIORS
-					if(!IsPlayerInRangeOfPoint(playerid, 15.0, OPBA_Player[playerid][RacX], OPBA_Player[playerid][RacY], OPBA_Player[playerid][RacZ]) && OPBA_PInteriors[playerid][OpbaTempInt])
+					if(!IsPlayerInRangeOfPoint(playerid, 25.0, OPBA_Player[playerid][RacX], OPBA_Player[playerid][RacY], OPBA_Player[playerid][RacZ]) && OPBA_PInteriors[playerid][OpbaTempInt])
 					{
 						#if defined OnPlayerBreakAir
 						OnPlayerBreakAir(playerid, 1);
@@ -159,7 +159,7 @@ public OPBA_AirbrakeTeleport(playerid)
 
 					#else
 
-					if(!IsPlayerInRangeOfPoint(playerid, 15.0, OPBA_Player[playerid][RacX], OPBA_Player[playerid][RacY], OPBA_Player[playerid][RacZ]))
+					if(!IsPlayerInRangeOfPoint(playerid, 25.0, OPBA_Player[playerid][RacX], OPBA_Player[playerid][RacY], OPBA_Player[playerid][RacZ]))
 					{
 						#if defined OnPlayerBreakAir
 						OnPlayerBreakAir(playerid, 1);
