@@ -147,7 +147,7 @@ public OPBA_AirbrakeTeleport(playerid)
 		GetPlayerPos(playerid, OPBA_Player[playerid][RacX], OPBA_Player[playerid][RacY], OPBA_Player[playerid][RacZ]);
 		OPBA_Player[playerid][RacPause] = false;
 	}
-	else
+	else if(GetTickCount() > (OPBA_Player[playerid][RacPauseTicks]+1500))
 	{
 		OPBA_Player[playerid][RacPause] = true;
 	}
