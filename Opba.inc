@@ -1,6 +1,5 @@
 /* 
 Made by RogueDrifter 2018/2/13 
-
 -=-=-=-=-=-=-=-=-=-=-=-=-=-
 Callbacks:
 -=-=-=-=-
@@ -39,14 +38,19 @@ forward OPBA_SetVehiclePos(vehicleid, Float:x, Float:y, Float:z);
 forward OPBA_PutPlayerInVehicle(playerid, vehicleid, seatid);
 
 #if !defined OPBA_CUSTOM_INTERIORS
-forward OPBA_FixIBug(playerid, newinteriorid);
+	forward OPBA_FixIBug(playerid, newinteriorid);
 #endif
 
+forward OPBA_PreventAbuse(playerid);
+forward OPBA_RCarFall(playerid);
 forward OPBA_FixFallBug(playerid);
 forward OPBA_AirbrakeTeleport(playerid);
-forward OPBA_SafeReset();
 forward OPBA_ResetPImuunity(playerid);
 forward OPBA_SetPPos(playerid);
+forward OPBA_SafeReset();
+
+#define OPBA_ONFOOT_DETECTION 15.0
+#define OPBA_INVEHI_DETECTION 25.0
 
 #if !defined IsValidVehicle
 	native IsValidVehicle(vehicleid); 
@@ -113,14 +117,17 @@ enum E_OPBA_PLAYER_DATA
 	bool:RacBreakImmunity,
 	bool:RacSImu,
 	bool:RacPause,
+	bool:RacAbuseP,
 
 	RacPauseTicks,
 	RacFallBug,
+	RacCarFall,
 
 	Float:RacX,
 	Float:RacY,
 	Float:RacZ,
 	
+	RacPATimer,	
 	RacFixTimer,	
 	RacProTimer,
 	RacDetectTimer
@@ -154,6 +161,76 @@ public OPBA_AirbrakeTeleport(playerid)
 	new OpbaTempInt = GetPlayerInterior(playerid);
 	#endif
 	
+	static OPBA_Vehicle; 
+	OPBA_Vehicle = GetPlayerVehicleID(playerid);
+
+	static Float:OPBA_X, Float:OPBA_Y, Float:OPBA_Z;
+	GetVehiclePos(OPBA_Vehicle, OPBA_X, OPBA_Y, OPBA_Z);
+
+	if(OPBA_Player[playerid][RacZ] > OPBA_Z && OPBA_Player[playerid][RacZ] < 0 && OPBA_Z < 0 && OPBA_Player[playerid][RacCarFall] == 0 && IsPlayerInAnyVehicle(playerid))
+	{
+		if(OPBA_Z - OPBA_Player[playerid][RacZ] >= -5.0)
+		{
+			if(!OPBA_Player[playerid][RacAbuseP])
+			{
+				OPBA_Player[playerid][RacCarFall] = 1;
+				OPBA_Player[playerid][RacPATimer] = SetTimerEx("OPBA_PreventAbuse", 10*1000, false, "i", playerid);
+			}
+			else
+			{
+				OPBA_Player[playerid][RacAbuseP] = false;
+			}
+		}
+	}
+
+	else if(OPBA_Player[playerid][RacCarFall] == 1)
+	{
+		switch(GetPlayerState(playerid))
+		{
+			case 1:
+			{
+				static Float:pOPBA_X, Float:pOPBA_Y, Float:pOPBA_Z;
+				GetPlayerPos(playerid, pOPBA_X, pOPBA_Y, pOPBA_Z);
+				if(pOPBA_Z >= 0)
+				{
+					OPBA_Player[playerid][RacCarFall] = 2;
+					SetTimerEx("OPBA_RCarFall", 2000, false, "i", playerid);
+				}
+			}
+			case 2..3:
+			{
+				if(OPBA_Z >= 0)
+				{
+					OPBA_Player[playerid][RacCarFall] = 2;
+					SetTimerEx("OPBA_RCarFall", 2000, false, "i", playerid);
+				}
+			}
+		}
+	}
+
+	else if(OPBA_Player[playerid][RacAbuseP] && OPBA_Player[playerid][RacCarFall] == 0)
+	{
+		switch(GetPlayerState(playerid))
+		{
+			case 1:
+			{
+				static Float:pOPBA_X, Float:pOPBA_Y, Float:pOPBA_Z;
+				GetPlayerPos(playerid, pOPBA_X, pOPBA_Y, pOPBA_Z);
+				if(pOPBA_Z >= 0)
+				{
+					OPBA_Player[playerid][RacAbuseP] = false;
+				}
+			}
+			case 2..3:
+			{
+				if(OPBA_Z >= 0)
+				{
+					OPBA_Player[playerid][RacAbuseP] = false;
+				}
+			}
+		}
+	}
+
 	if(GetTickCount() < (OPBA_Player[playerid][RacPauseTicks]+1500) && OPBA_Player[playerid][RacPause])
 	{
 		GetPlayerPos(playerid, OPBA_Player[playerid][RacX], OPBA_Player[playerid][RacY], OPBA_Player[playerid][RacZ]);
@@ -165,7 +242,7 @@ public OPBA_AirbrakeTeleport(playerid)
 	}
 
 	if(OPBA_GetPlayerSpeed(playerid) <= 60 && !OPBA_Player[playerid][RacPause] && OPBA_Player[playerid][RacFallBug] == 0
-	&& !OPBA_Player[playerid][RacBreakImmunity] && OPBA_Player[playerid][RacSImu])
+	&& !OPBA_Player[playerid][RacBreakImmunity] && OPBA_Player[playerid][RacSImu] && OPBA_Player[playerid][RacCarFall] == 0)
 	{
 		#if !defined OnPlayerBreakAir
 		new OPBA_CheaterName[MAX_PLAYER_NAME], OPBA_CheatString[60];
@@ -186,7 +263,7 @@ public OPBA_AirbrakeTeleport(playerid)
 				if(GetPlayerSurfingVehicleID(playerid) == INVALID_VEHICLE_ID && GetPlayerSpecialAction(playerid) != 2)
 				{
 					#if !defined OPBA_CUSTOM_INTERIORS
-					if(!IsPlayerInRangeOfPoint(playerid, 15.0, OPBA_Player[playerid][RacX], OPBA_Player[playerid][RacY], OPBA_Player[playerid][RacZ]) && OPBA_PInteriors[playerid][OpbaTempInt])
+					if(!IsPlayerInRangeOfPoint(playerid, OPBA_ONFOOT_DETECTION, OPBA_Player[playerid][RacX], OPBA_Player[playerid][RacY], OPBA_Player[playerid][RacZ]) && OPBA_PInteriors[playerid][OpbaTempInt])
 					{
 						#if defined OnPlayerBreakAir
 						OnPlayerBreakAir(playerid, 1);
@@ -198,7 +275,7 @@ public OPBA_AirbrakeTeleport(playerid)
 
 					#else
 
-					if(!IsPlayerInRangeOfPoint(playerid, 15.0, OPBA_Player[playerid][RacX], OPBA_Player[playerid][RacY], OPBA_Player[playerid][RacZ]))
+					if(!IsPlayerInRangeOfPoint(playerid, OPBA_ONFOOT_DETECTION, OPBA_Player[playerid][RacX], OPBA_Player[playerid][RacY], OPBA_Player[playerid][RacZ]))
 					{
 						#if defined OnPlayerBreakAir
 						OnPlayerBreakAir(playerid, 1);
@@ -213,7 +290,7 @@ public OPBA_AirbrakeTeleport(playerid)
 			case 2:
 			{
 				#if !defined OPBA_CUSTOM_INTERIORS
-				if(!IsPlayerInRangeOfPoint(playerid, 40.0, OPBA_Player[playerid][RacX], OPBA_Player[playerid][RacY], OPBA_Player[playerid][RacZ]) && OPBA_PInteriors[playerid][OpbaTempInt])
+				if(!IsPlayerInRangeOfPoint(playerid, OPBA_INVEHI_DETECTION, OPBA_Player[playerid][RacX], OPBA_Player[playerid][RacY], OPBA_Player[playerid][RacZ]) && OPBA_PInteriors[playerid][OpbaTempInt])
 				{
 					#if defined OnPlayerBreakAir
 					OnPlayerBreakAir(playerid, 2);
@@ -225,7 +302,7 @@ public OPBA_AirbrakeTeleport(playerid)
 
 				#else
 
-				if(!IsPlayerInRangeOfPoint(playerid, 40.0, OPBA_Player[playerid][RacX], OPBA_Player[playerid][RacY], OPBA_Player[playerid][RacZ]))
+				if(!IsPlayerInRangeOfPoint(playerid, OPBA_INVEHI_DETECTION, OPBA_Player[playerid][RacX], OPBA_Player[playerid][RacY], OPBA_Player[playerid][RacZ]))
 				{
 					#if defined OnPlayerBreakAir
 					OnPlayerBreakAir(playerid, 2);
@@ -238,10 +315,10 @@ public OPBA_AirbrakeTeleport(playerid)
 			}
 			case 3:
 			{
-	 			if(OPBA_VOwner[GetPlayerVehicleID(playerid)] == INVALID_PLAYER_ID)
+	 			if(OPBA_VOwner[OPBA_Vehicle] == INVALID_PLAYER_ID)
 				{
 					#if !defined OPBA_CUSTOM_INTERIORS
-					if(!IsPlayerInRangeOfPoint(playerid, 40.0, OPBA_Player[playerid][RacX], OPBA_Player[playerid][RacY], OPBA_Player[playerid][RacZ]) && OPBA_PInteriors[playerid][OpbaTempInt])
+					if(!IsPlayerInRangeOfPoint(playerid, OPBA_INVEHI_DETECTION, OPBA_Player[playerid][RacX], OPBA_Player[playerid][RacY], OPBA_Player[playerid][RacZ]) && OPBA_PInteriors[playerid][OpbaTempInt])
 					{
 						#if defined OnPlayerBreakAir
 						OnPlayerBreakAir(playerid, 2);
@@ -253,7 +330,7 @@ public OPBA_AirbrakeTeleport(playerid)
 
 					#else
 
-				if(!IsPlayerInRangeOfPoint(playerid, 40.0, OPBA_Player[playerid][RacX], OPBA_Player[playerid][RacY], OPBA_Player[playerid][RacZ]))
+				if(!IsPlayerInRangeOfPoint(playerid, OPBA_INVEHI_DETECTION, OPBA_Player[playerid][RacX], OPBA_Player[playerid][RacY], OPBA_Player[playerid][RacZ]))
 				{
 					#if defined OnPlayerBreakAir
 					OnPlayerBreakAir(playerid, 2);
@@ -299,9 +376,11 @@ public OPBA_SafeReset()
     return 1; 
 } 
 
-public OPBA_FixFallBug(playerid) 	 return OPBA_Player[playerid][RacFallBug] = 0;
+public OPBA_PreventAbuse(playerid)	 return OPBA_Player[playerid][RacCarFall] 		= 0, OPBA_Player[playerid][RacAbuseP] 	   = true;
+public OPBA_RCarFall(playerid) 		 return OPBA_Player[playerid][RacCarFall] 		= 0, KillTimer(OPBA_Player[playerid][RacPATimer]);
+public OPBA_FixFallBug(playerid) 	 return OPBA_Player[playerid][RacFallBug] 		= 0;
 public OPBA_ResetPImuunity(playerid) return OPBA_Player[playerid][RacBreakImmunity] = false;
-public OPBA_SetPPos(playerid) 		 return OPBA_Player[playerid][RacSImu] = true;
+public OPBA_SetPPos(playerid) 		 return OPBA_Player[playerid][RacSImu] 			= true;
 
 public OPBA_SetPlayerPos(playerid, Float:x, Float:y, Float:z)
 {
@@ -388,8 +467,8 @@ public OnPlayerEnterVehicle(playerid, vehicleid, ispassenger)
 }
 public OnGameModeInit()
 {
-	print("     [[--|| OnPlayerBreakAir V1.9 ||--]]     ");
-    print("     [[--|| Anti airbreak by RogueDrifter V1.9 ||--]]      ");
+	print("     [[--|| OnPlayerBreakAir V2.0 ||--]]     ");
+    print("     [[--|| Anti airbreak by RogueDrifter V2.0 ||--]]      ");
     print("     [[--|| Successfully Loaded! ||--]]      ");
 
     OP_SafeTimer = SetTimer("OPBA_SafeReset", 5000, true);
@@ -403,8 +482,8 @@ public OnGameModeInit()
 
 public OnGameModeExit()
 {
-	print("     [[--|| OnPlayerBreakAir V1.9 ||--]]     ");
-    print("     [[--|| Anti airbreak by RogueDrifter V1.9 ||--]]      ");
+	print("     [[--|| OnPlayerBreakAir V2.0 ||--]]     ");
+    print("     [[--|| Anti airbreak by RogueDrifter V2.0 ||--]]      ");
     print("     [[--|| Successfully Unloaded! ||--]]      ");
 
 	KillTimer(OP_SafeTimer);
@@ -458,9 +537,11 @@ public OnPlayerDisconnect(playerid, reason)
 	if(GetPlayerState(playerid) == 2) OPBA_VOwner[GetPlayerVehicleID(playerid)] = INVALID_PLAYER_ID;
 
 	OPBA_Player[playerid][RacFallBug] 		= 0;
+	OPBA_Player[playerid][RacAbuseP]		= false;
 	OPBA_Player[playerid][RacBreakImmunity] = false;
 	OPBA_Player[playerid][RacSImu] 			= false;
 	OPBA_Player[playerid][RacPause] 		= false;
+	OPBA_Player[playerid][RacCarFall]       = 0;
 
 	#if !defined OPBA_CUSTOM_INTERIORS
 
@@ -556,7 +637,6 @@ static OPBA_PlayerFalling(playerid)
 	{
 		case 1130 , 1133: return 1;
 	}
-	
 	return 0;
 }
 
