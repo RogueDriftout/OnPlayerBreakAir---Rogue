@@ -1,6 +1,7 @@
 /* 
 Made by RogueDrifter 2018/2/13 
 -=-=-=-=-=-=-=-=-=-=-=-=-=-
+
 Callbacks:
 -=-=-=-=-
 	OnPlayerBreakAir(playerid, breaktype);
@@ -27,10 +28,6 @@ If you want it to ban you can use:
 
 #if !defined FILTERSCRIPT
 
-#if !defined OPBA_RESET_TIME
-	#define OPBA_RESET_TIME 3500
-#endif
-
 forward OPBA_SetPlayerPos(playerid, Float:x, Float:y, Float:z);
 forward OPBA_SetPlayerPosFindZ(playerid, Float:x, Float:y, Float:z);
 forward OPBA_TogglePlayerSpectating(playerid, toggle);
@@ -49,8 +46,10 @@ forward OPBA_ResetPImuunity(playerid);
 forward OPBA_SetPPos(playerid);
 forward OPBA_SafeReset();
 
-#define OPBA_ONFOOT_DETECTION 15.0
+#define OPBA_ONFOOT_DETECTION 20.0
 #define OPBA_INVEHI_DETECTION 25.0
+#define OPBA_MAX_DETECT_SPEED 40.0
+#define OPBA_RESET_TIME 3000
 
 #if !defined IsValidVehicle
 	native IsValidVehicle(vehicleid); 
@@ -98,6 +97,10 @@ forward OPBA_SafeReset();
 
 #if defined OPBA_OnPlayerStateChange
 	forward OPBA_OnPlayerStateChange(playerid, newstate, oldstate);
+#endif
+
+#if defined OPBA_OnPlayerExitVehicle
+	forward OPBA_OnPlayerExitVehicle(playerid, vehicleid);
 #endif
 
 #if defined OPBA_OnPlayerEnterVehicle
@@ -241,7 +244,7 @@ public OPBA_AirbrakeTeleport(playerid)
 		OPBA_Player[playerid][RacPause] = true;
 	}
 
-	if(OPBA_GetPlayerSpeed(playerid) <= 60 && !OPBA_Player[playerid][RacPause] && OPBA_Player[playerid][RacFallBug] == 0
+	if(OPBA_GetPlayerSpeed(playerid) <= OPBA_MAX_DETECT_SPEED && !OPBA_Player[playerid][RacPause] && OPBA_Player[playerid][RacFallBug] == 0
 	&& !OPBA_Player[playerid][RacBreakImmunity] && OPBA_Player[playerid][RacSImu] && OPBA_Player[playerid][RacCarFall] == 0)
 	{
 		#if !defined OnPlayerBreakAir
@@ -465,10 +468,24 @@ public OnPlayerEnterVehicle(playerid, vehicleid, ispassenger)
 	return 1;
 		#endif
 }
+
+public OnPlayerExitVehicle(playerid, vehicleid)
+{
+	KillTimer(OPBA_Player[playerid][RacProTimer]);
+	OPBA_Player[playerid][RacProTimer] = SetTimerEx("OPBA_ResetPImuunity", OPBA_RESET_TIME, false, "i", playerid);
+	OPBA_Player[playerid][RacBreakImmunity] = true;
+
+		#if defined OPBA_OnPlayerExitVehicle
+	return OPBA_OnPlayerExitVehicle(playerid, vehicleid);
+		#else
+	return 1;
+		#endif
+}
+
 public OnGameModeInit()
 {
-	print("     [[--|| OnPlayerBreakAir V2.0 ||--]]     ");
-    print("     [[--|| Anti airbreak by RogueDrifter V2.0 ||--]]      ");
+	print("     [[--|| OnPlayerBreakAir V2.1 ||--]]     ");
+    print("     [[--|| Anti airbreak by RogueDrifter V2.1 ||--]]      ");
     print("     [[--|| Successfully Loaded! ||--]]      ");
 
     OP_SafeTimer = SetTimer("OPBA_SafeReset", 5000, true);
@@ -482,8 +499,8 @@ public OnGameModeInit()
 
 public OnGameModeExit()
 {
-	print("     [[--|| OnPlayerBreakAir V2.0 ||--]]     ");
-    print("     [[--|| Anti airbreak by RogueDrifter V2.0 ||--]]      ");
+	print("     [[--|| OnPlayerBreakAir V2.1 ||--]]     ");
+    print("     [[--|| Anti airbreak by RogueDrifter V2.1 ||--]]      ");
     print("     [[--|| Successfully Unloaded! ||--]]      ");
 
 	KillTimer(OP_SafeTimer);
@@ -687,6 +704,14 @@ static OPBA_PlayerFalling(playerid)
 #endif
 
 #define OnPlayerUpdate OPBA_OnPlayerUpdate
+
+#if defined _ALS_OnPlayerExitVehicle
+  #undef OnPlayerExitVehicle
+#else
+    #define _ALS_OnPlayerExitVehicle
+#endif
+
+#define OnPlayerExitVehicle OPBA_OnPlayerExitVehicle
 
 #if defined _ALS_OnPlayerEnterVehicle
   #undef OnPlayerEnterVehicle
